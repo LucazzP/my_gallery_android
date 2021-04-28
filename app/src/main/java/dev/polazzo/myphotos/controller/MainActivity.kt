@@ -3,6 +3,7 @@ package dev.polazzo.myphotos.controller
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -28,6 +29,10 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
     val CAMERA_PERMISSION_CODE = 2001
     val CAMERA_INTENT_CODE = 3001
     private lateinit var recyclerView: RecyclerView
+    val PERMISSION_CODE_READ = 1001
+//    val PERMISSION_CODE_WRITE = 1002
+    private val PICK_INTENT_IMAGE_CODE = 1000
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +60,23 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
             }
         })
     }
+
+    fun loadPictureClickButton(view: View){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if ((checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
+            ) {
+                val permission = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+
+                requestPermissions(permission, PERMISSION_CODE_READ) // GIVE AN INTEGER VALUE FOR PERMISSION_CODE_READ LIKE 1001
+            } else {
+                val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+                gallery.type = "image/*"
+                startActivityForResult(gallery, PICK_INTENT_IMAGE_CODE)
+            }
+        }
+
+    }
+
 
     fun takePhotoClickButton(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -167,6 +189,32 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
                 ).show()
             }
         }
+        if(requestCode == PICK_INTENT_IMAGE_CODE){
+            if(resultCode == RESULT_OK){
+                val imageUri = data?.data
+                val file = File(getPath(imageUri!!)!!)
+//                val file = File(imageUri?.path!!)
+                DataModel.instance.addPhoto(Photo(0, file.path, file.name, Date()), this)
+                recyclerView.adapter!!.notifyItemInserted(0)
+            }else {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Problem getting the image from the gallery app",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        }
+    }
+    fun getPath(uri: Uri): String? {
+        val projection =
+            arrayOf(MediaStore.Images.Media.DATA)
+        val cursor = contentResolver.query(uri, projection, null, null, null) ?: return null
+        val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        val s = cursor.getString(column_index)
+        cursor.close()
+        return s
     }
 
     override fun onClickPhotoListener(photo: Photo, position: Int) {
