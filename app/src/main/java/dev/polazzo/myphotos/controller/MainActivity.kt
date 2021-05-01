@@ -1,9 +1,9 @@
 package dev.polazzo.myphotos.controller
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
     private lateinit var recyclerView: RecyclerView
     val PERMISSION_CODE_READ = 1001
 //    val PERMISSION_CODE_WRITE = 1002
-    private val PICK_INTENT_IMAGE_CODE = 1000
+    private val PICK_INTENT_IMAGE_CODE = 100
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,7 +76,6 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
         }
 
     }
-
 
     fun takePhotoClickButton(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -168,6 +167,8 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
         }
     }
 
+
+
     override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
@@ -191,10 +192,11 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
         }
         if(requestCode == PICK_INTENT_IMAGE_CODE){
             if(resultCode == RESULT_OK){
+                val uriPathHelper = URIPathHelper()
                 val imageUri = data?.data
-                val file = File(getPath(imageUri!!)!!)
-//                val file = File(imageUri?.path!!)
-                DataModel.instance.addPhoto(Photo(0, file.path, file.name, Date()), this)
+                val filePath = uriPathHelper.getPath(this, imageUri!!)
+                val file = File(imageUri?.path!!)
+                DataModel.instance.addPhoto(Photo(0, filePath!!, file.name, Date()), this)
                 recyclerView.adapter!!.notifyItemInserted(0)
             }else {
                 Toast.makeText(
@@ -206,16 +208,16 @@ class MainActivity : AppCompatActivity(), OnClickPhotoListener {
 
         }
     }
-    fun getPath(uri: Uri): String? {
-        val projection =
-            arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = contentResolver.query(uri, projection, null, null, null) ?: return null
-        val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-        cursor.moveToFirst()
-        val s = cursor.getString(column_index)
-        cursor.close()
-        return s
-    }
+//    fun getPath(uri: Uri): String? {
+//        val projection =
+//            arrayOf(MediaStore.Images.Media.DATA)
+//        val cursor = contentResolver.query(uri, projection, null, null, null) ?: return null
+//        val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+//        cursor.moveToFirst()
+//        val s = cursor.getString(column_index)
+//        cursor.close()
+//        return s
+//    }
 
     override fun onClickPhotoListener(photo: Photo, position: Int) {
         //TODO("Not yet implemented")
